@@ -45,9 +45,10 @@ This platform establishes a closed-loop **Cyber-Physical Digital Twin** connecti
 
 ## 🛠️ Project Structure
 ```
-d:/CSS Tech project/
+d:/CSS Tech project/SIH-2026-OIL/
 ├── app.py                         # Enterprise Streamlit Web Application
 ├── run_dashboard.bat              # One-click Windows launch script
+├── MODELS_DATA_AND_SOURCES.md     # Full Inventory of Models, Calibration Data & Academic References
 ├── core/
 │   ├── physics/
 │   │   ├── thermal_reservoir.py   # Boberg-Lantz CSS heat dissipation & heavy oil IPR
