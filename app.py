@@ -640,7 +640,12 @@ with tab_reports:
         st.markdown("#### 📊 Export Telemetry & Dynamometer CSV")
         st.write("Download complete 120-day time-series telemetry data and 1D wave dynamometer coordinates.")
 
+<<<<<<< Updated upstream
         df_export = generate_well_telemetry(selected_well_id, days_count=120)
+=======
+<<<<<<< Updated upstream
+        df_export = generate_well_telemetry(selected_well_id, days_count=90)
+>>>>>>> Stashed changes
         csv_buffer = df_export.to_csv(index=False)
         st.download_button(
             label="📥 Download Complete Cycle Telemetry (CSV)",
@@ -648,19 +653,51 @@ with tab_reports:
             file_name=f"{selected_well_id}_telemetry_history.csv",
             mime="text/csv"
         )
+=======
+        # --- FIX: Lazy generation — data only built when user clicks Generate,
+        # not on every page render. This prevents IDM/browser download managers
+        # from intercepting a spurious download trigger on load. ---
+>>>>>>> Stashed changes
 
-        dyno_df = pd.DataFrame({
-            "surface_pos_in": current_state["srp_dynamics"]["surface_position_in"],
-            "surface_load_lbs": current_state["srp_dynamics"]["surface_load_lbs"],
-            "downhole_pos_in": current_state["srp_dynamics"]["downhole_position_in"],
-            "downhole_load_lbs": current_state["srp_dynamics"]["downhole_load_lbs"]
-        })
-        st.download_button(
-            label="📥 Download Dynamometer Card Coordinates (CSV)",
-            data=dyno_df.to_csv(index=False),
-            file_name=f"{selected_well_id}_dyno_card_day_{day_in_cycle}.csv",
-            mime="text/csv"
-        )
+        telem_key = f"telemetry_csv_{selected_well_id}"
+        dyno_key  = f"dyno_csv_{selected_well_id}_{day_in_cycle}"
+
+        if st.button("⚙️ Generate Telemetry Export", key="gen_telem_btn"):
+            df_export = generate_well_telemetry(selected_well_id, days_count=120)
+            st.session_state[telem_key] = df_export.to_csv(index=False)
+
+        if telem_key in st.session_state:
+            st.download_button(
+                label="📥 Download Complete Cycle Telemetry (CSV)",
+                data=st.session_state[telem_key],
+                file_name=f"{selected_well_id}_telemetry_history.csv",
+                mime="text/csv",
+                key="dl_telem_btn"
+            )
+        else:
+            st.info("Click **Generate Telemetry Export** above to prepare the download.")
+
+        st.markdown("---")
+
+        if st.button("⚙️ Generate Dynamometer Card Export", key="gen_dyno_btn"):
+            dyno_df = pd.DataFrame({
+                "surface_pos_in":    current_state["srp_dynamics"]["surface_position_in"],
+                "surface_load_lbs":  current_state["srp_dynamics"]["surface_load_lbs"],
+                "downhole_pos_in":   current_state["srp_dynamics"]["downhole_position_in"],
+                "downhole_load_lbs": current_state["srp_dynamics"]["downhole_load_lbs"]
+            })
+            st.session_state[dyno_key] = dyno_df.to_csv(index=False)
+
+        if dyno_key in st.session_state:
+            st.download_button(
+                label="📥 Download Dynamometer Card Coordinates (CSV)",
+                data=st.session_state[dyno_key],
+                file_name=f"{selected_well_id}_dyno_card_day_{day_in_cycle}.csv",
+                mime="text/csv",
+                key="dl_dyno_btn"
+            )
+        else:
+            st.info("Click **Generate Dynamometer Card Export** above to prepare the download.")
 
 
 # ==========================================
