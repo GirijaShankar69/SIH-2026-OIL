@@ -65,6 +65,16 @@ class TestThermalPhysics(unittest.TestCase):
         self.assertLess(prof["wellhead_temp_c"], prof["bottomhole_temp_c"])
         self.assertGreater(prof["wellhead_temp_c"], 35.0)
 
+    def test_physics_telemetry_generation(self):
+        """Telemetry generation must return valid DataFrame with physics-derived columns."""
+        from core.data.sample_data_generator import generate_well_telemetry
+        df = generate_well_telemetry("BGW-01", days_count=30)
+        self.assertEqual(len(df), 30)
+        self.assertIn("sandface_temp_c", df.columns)
+        self.assertIn("crude_viscosity_cp", df.columns)
+        self.assertIn("pprl_lbs", df.columns)
+        self.assertGreater(df["crude_viscosity_cp"].iloc[-1], df["crude_viscosity_cp"].iloc[0])
+
 
 if __name__ == "__main__":
     unittest.main()

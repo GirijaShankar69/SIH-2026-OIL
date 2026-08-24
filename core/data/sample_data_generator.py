@@ -152,56 +152,95 @@ def generate_historical_failure_logs() -> pd.DataFrame:
 
 
 def generate_well_telemetry(well_id: str, days_count: int = 60) -> pd.DataFrame:
-    """Generates synthetic time series sensor telemetry for a given well."""
+    """
+    Generates physics-derived time series sensor telemetry for a given well asset.
+    Derived directly from Boberg-Lantz thermal dissipation, Andrade viscosity kinetics,
+    Gibbs 1D wave equation dynamics, and closed-loop VFD governor laws.
+    """
+    from core.physics.thermal_reservoir import CSSCycleParameters, baghewala_reservoir
+    from core.physics.sucker_rod_dynamics import baghewala_srp
+
     well_meta = next((w for w in WELLS_METADATA if w["well_id"] == well_id), WELLS_METADATA[0])
     
     np.random.seed(hash(well_id) % 10000)
     time_index = pd.date_range(end=pd.Timestamp.now(), periods=days_count, freq='D')
-    
     cycle_day = np.arange(1, days_count + 1)
     
-    # Thermal decay
-    t_init = 195.0
-    temp_c = 47.0 + (t_init - 47.0) * np.exp(-np.sqrt(cycle_day / 28.0)) + np.random.normal(0, 1.2, days_count)
-    temp_c = np.clip(temp_c, 47.0, 220.0)
+    # 1. Boberg-Lantz Reservoir Physics Simulation
+    cycle_num = int(well_meta.get("current_css_cycle", 3))
+    sim_params = CSSCycleParameters(
+        cycle_number=cycle_num,
+        steam_volume_cwe=3600.0,
+        injection_rate=250.0,
+        soak_days=5.0,
+        producing_days=max(days_count, 120)
+    )
+    sim = baghewala_reservoir.simulate_cycle(sim_params)
 
-    # Viscosity
-    from core.physics.thermal_reservoir import baghewala_reservoir
-    visc_cp = np.array([baghewala_reservoir.oil_viscosity(t) for t in temp_c])
+    temp_res_c = sim["temperature_reservoir_c"][:days_count]
+    sandface_temp_c = sim["temperature_sandface_c"][:days_count]
+    visc_cp = sim["viscosity_cp"][:days_count]
+    oil_rate_bopd = sim["oil_rate_bopd"][:days_count]
+    water_cut = sim["water_cut"][:days_count]
+    p_res = sim["reservoir_pressure_bar"][:days_count]
 
-    # Dynamic SPM vs Static SPM
-    if well_id in ["BGW-01", "BGW-09"]:
-        # AI Dynamic Control
-        spm = np.clip(7.5 - 2.8 * (cycle_day / days_count), 4.2, 7.8) + np.random.normal(0, 0.05, days_count)
-        is_float = np.zeros(days_count, dtype=bool)
-        float_risk = np.clip((visc_cp - 200.0) / 1200.0 * 0.35, 0.05, 0.45)
+    # 2. VFD Governor Law vs Fixed SPM
+    is_auto = (well_id in ["BGW-01", "BGW-09"])
+    spm = np.zeros(days_count)
+    if is_auto:
+        for i in range(days_count):
+            t = temp_res_c[i]
+            mu = visc_cp[i]
+            if t >= 120.0:
+                spm[i] = 7.4
+            elif t >= 85.0:
+                spm[i] = 6.2 - 0.7 * ((120.0 - t) / 35.0)
+            else:
+                spm[i] = 4.2 - 0.5 * np.clip((mu - 250.0) / 1200.0, 0.0, 1.0)
     else:
-        # Static control
-        spm = np.full(days_count, well_meta["current_spm"])
-        float_risk = np.clip((visc_cp - 180.0) / 750.0, 0.0, 1.0)
-        is_float = (float_risk > 0.72) & (cycle_day > 35)
+        fixed_val = float(well_meta.get("current_spm", 5.5))
+        spm[:] = fixed_val if fixed_val > 0 else 5.5
 
-    # Production rates
-    oil_rate_bopd = np.clip(160.0 * np.exp(-cycle_day / 35.0) + 12.0 + np.random.normal(0, 2.5, days_count), 8.0, 210.0)
-    water_cut = np.clip(0.85 * np.exp(-cycle_day / 15.0) + 0.38 + 0.35 * (cycle_day / days_count), 0.30, 0.95)
-    motor_power_kw = (spm * 2.1) + (visc_cp / 800.0) * 2.8 + np.random.normal(0, 0.3, days_count)
-    pprl_lbs = 14500.0 + (spm * 450.0) + np.random.normal(0, 200.0, days_count)
-    mprl_lbs = np.maximum(8200.0 - (visc_cp * 3.8) - np.random.normal(0, 150.0, days_count), 800.0)
+    # 3. Sucker Rod Wave Equation Dynamics
+    stroke_m = float(well_meta.get("stroke_length_m", 2.54))
+    pprl_lbs = np.zeros(days_count)
+    mprl_lbs = np.zeros(days_count)
+    motor_power_kw = np.zeros(days_count)
+    float_risk = np.zeros(days_count)
+    is_float = np.zeros(days_count, dtype=bool)
+    wellhead_temp_c = np.zeros(days_count)
+
+    for i in range(days_count):
+        srp_out = baghewala_srp.solve_wave_equation(
+            temperature_c=float(temp_res_c[i]),
+            viscosity_cp=float(visc_cp[i]),
+            bottomhole_pressure_bar=float(p_res[i] - 12.0),
+            spm=float(spm[i]),
+            stroke_length_m=stroke_m,
+            pump_fillage=0.92
+        )
+        pprl_lbs[i] = srp_out["pprl_lbs"]
+        mprl_lbs[i] = srp_out["mprl_lbs"]
+        motor_power_kw[i] = srp_out["motor_power_kw"]
+        float_risk[i] = srp_out["rod_floating_risk_index"]
+        is_float[i] = srp_out["is_rod_floating"]
+        wellhead_temp_c[i] = round(float(sandface_temp_c[i] * 0.78), 2)
 
     df = pd.DataFrame({
         "timestamp": time_index,
         "cycle_day": cycle_day,
-        "wellhead_temp_c": temp_c * 0.78,
-        "sandface_temp_c": temp_c,
-        "crude_viscosity_cp": visc_cp,
-        "spm": spm,
-        "oil_rate_bopd": oil_rate_bopd,
-        "water_cut": water_cut,
-        "motor_power_kw": motor_power_kw,
-        "pprl_lbs": pprl_lbs,
-        "mprl_lbs": mprl_lbs,
-        "rod_floating_risk": float_risk,
+        "wellhead_temp_c": wellhead_temp_c,
+        "sandface_temp_c": np.round(sandface_temp_c, 2),
+        "crude_viscosity_cp": np.round(visc_cp, 2),
+        "spm": np.round(spm, 2),
+        "oil_rate_bopd": np.round(oil_rate_bopd, 2),
+        "water_cut": np.round(water_cut, 3),
+        "motor_power_kw": np.round(motor_power_kw, 2),
+        "pprl_lbs": np.round(pprl_lbs, 1),
+        "mprl_lbs": np.round(mprl_lbs, 1),
+        "rod_floating_risk": np.round(float_risk, 3),
         "is_rod_floating": is_float
     })
 
     return df
+

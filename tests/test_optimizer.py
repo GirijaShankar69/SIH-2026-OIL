@@ -70,6 +70,29 @@ class TestOptimizerAndTwin(unittest.TestCase):
         self.assertGreater(summary["field_average_sor"], 1.5)
         self.assertEqual(len(summary["well_states"]), 6)
 
+    def test_well_digital_twin_live_metrics_and_cycle_update(self):
+        """Live metrics must return all required keys and set_cycle must dynamically update simulation."""
+        metrics = self.field_twin.get_live_metrics("BGW-01", day=45)
+        required_keys = [
+            "temperature", "viscosity_cp", "spm", "fillage", "pprl_lbs",
+            "rul_days", "sor", "rod_float_risk", "pump_unsetting_prob"
+        ]
+        for key in required_keys:
+            self.assertIn(key, metrics, f"Missing required KPI key: {key}")
+            self.assertIsNotNone(metrics[key])
+
+        well = self.field_twin.wells["BGW-01"]
+        orig_cycle = well.cycle_number
+        well.set_cycle(5)
+        self.assertEqual(well.cycle_number, 5)
+        self.assertEqual(well.params.cycle_number, 5)
+        # Restore
+        well.set_cycle(orig_cycle)
+
+        # Test invalid well raises KeyError
+        with self.assertRaises(KeyError):
+            self.field_twin.get_live_metrics("NON-EXISTENT-WELL")
+
 
 if __name__ == "__main__":
     unittest.main()

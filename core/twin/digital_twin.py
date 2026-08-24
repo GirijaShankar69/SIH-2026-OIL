@@ -38,6 +38,72 @@ class BaghewalaWellDigitalTwin:
         )
         self.sim_data = baghewala_reservoir.simulate_cycle(self.params)
 
+    def set_cycle(self, cycle_number: int):
+        """
+        Updates the CSS cycle number and re-simulates reservoir physics.
+        """
+        if self.cycle_number != cycle_number:
+            self.cycle_number = cycle_number
+            self.params.cycle_number = cycle_number
+            self.sim_data = baghewala_reservoir.simulate_cycle(self.params)
+
+    def get_live_metrics(self, day: Optional[int] = None, spm_override: Optional[float] = None) -> Dict[str, Any]:
+        """
+        Computes real-time physics-backed operational KPIs for this well asset.
+        
+        Required Output Keys:
+        - temperature: float (reservoir temperature in °C)
+        - sandface_temperature: float (°C)
+        - wellhead_temperature: float (°C)
+        - viscosity_cp: float (in-situ dead crude viscosity in cP)
+        - spm: float (operating pumping speed in SPM)
+        - fillage: float (pump fillage fraction, 0.0 to 1.0)
+        - pprl_lbs: float (Peak Polish Rod Load in lbs)
+        - mprl_lbs: float (Minimum Polish Rod Load in lbs)
+        - rul_days: int (Remaining Useful Life in days)
+        - sor: float (Cumulative Steam-Oil Ratio in m3/m3)
+        - rod_float_risk: float (Rod floating risk index, 0.0 to 1.0)
+        - pump_unsetting_prob: float (Hold-down unsetting probability, 0.0 to 1.0)
+        """
+        state = self.get_current_state(day=day, spm_override=spm_override)
+        
+        # Calculate dynamic fatigue RUL
+        cur_day = state["day"]
+        cycle_offset = (self.cycle_number - 1) * 120
+        rul_data = baghewala_maintenance.estimate_rod_fatigue_and_rul(
+            daily_spm_history=np.full(30, state["operating_spm"]),
+            daily_sigma_max_psi=np.full(30, state["srp_dynamics"]["sigma_max_psi"]),
+            daily_sigma_min_psi=np.full(30, state["srp_dynamics"]["sigma_min_psi"]),
+            daily_impact_lbs=np.full(30, state["impact_shock_lbs"]),
+            cumulative_days_in_service=int(cur_day + cycle_offset)
+        )
+
+        unsetting_p = float(state["unsetting_data"]["unsetting_probability"])
+
+        return {
+            "temperature": round(float(state["reservoir_temperature_c"]), 2),
+            "sandface_temperature": round(float(state["sandface_temperature_c"]), 2),
+            "wellhead_temperature": round(float(state["wellhead_temperature_c"]), 2),
+            "viscosity_cp": round(float(state["oil_viscosity_cp"]), 2),
+            "spm": round(float(state["operating_spm"]), 2),
+            "fillage": 0.92,
+            "pprl_lbs": round(float(state["pprl_lbs"]), 1),
+            "mprl_lbs": round(float(state["mprl_lbs"]), 1),
+            "rul_days": int(rul_data["remaining_useful_life_days"]),
+            "sor": round(float(state["sor"]), 2),
+            "rod_float_risk": round(float(state["rod_floating_risk_index"]), 3),
+            "pump_unsetting_prob": round(unsetting_p, 3),
+            "oil_rate_bopd": round(float(state["oil_rate_bopd"]), 2),
+            "cum_oil_bbl": round(float(state["cum_oil_bbl"]), 1),
+            "motor_power_kw": round(float(state["motor_power_kw"]), 2),
+            "kwh_per_bbl": round(float(state["kwh_per_bbl"]), 2),
+            "is_rod_floating": bool(state["is_rod_floating"]),
+            "diagnosis": str(state["diagnosis"]),
+            "diagnosis_severity": str(state["diagnosis_severity"]),
+            "diagnosis_confidence": float(state["diagnosis_confidence"]),
+            "diagnosis_recommendation": str(state["diagnosis_recommendation"])
+        }
+
     def get_current_state(self, day: Optional[int] = None, spm_override: Optional[float] = None) -> Dict[str, Any]:
         """
         Retrieves the complete physics and AI digital twin snapshot for a specific day in the CSS cycle.
@@ -149,6 +215,28 @@ class BaghewalaFieldDigitalTwin:
     def __init__(self):
         self.wells = {w["well_id"]: BaghewalaWellDigitalTwin(w) for w in WELLS_METADATA}
 
+    def get_live_metrics(self, well_id: str, day: Optional[int] = None, spm_override: Optional[float] = None) -> Dict[str, Any]:
+        """
+        Computes real-time physics-backed operational KPIs for a specified well asset.
+        
+        Required Output Keys:
+        - temperature: float (reservoir temperature in °C)
+        - sandface_temperature: float (°C)
+        - wellhead_temperature: float (°C)
+        - viscosity_cp: float (in-situ dead crude viscosity in cP)
+        - spm: float (operating pumping speed in SPM)
+        - fillage: float (pump fillage fraction, 0.0 to 1.0)
+        - pprl_lbs: float (Peak Polish Rod Load in lbs)
+        - mprl_lbs: float (Minimum Polish Rod Load in lbs)
+        - rul_days: int (Remaining Useful Life in days)
+        - sor: float (Cumulative Steam-Oil Ratio in m3/m3)
+        - rod_float_risk: float (Rod floating risk index, 0.0 to 1.0)
+        - pump_unsetting_prob: float (Hold-down unsetting probability, 0.0 to 1.0)
+        """
+        if well_id not in self.wells:
+            raise KeyError(f"Well ID '{well_id}' is not configured in the Baghewala Field Twin.")
+        return self.wells[well_id].get_live_metrics(day=day, spm_override=spm_override)
+
     def get_field_summary(self) -> Dict[str, Any]:
         """Calculates aggregate field KPIs."""
         total_oil_bopd = 0.0
@@ -165,7 +253,7 @@ class BaghewalaFieldDigitalTwin:
             if "Active" in well.meta["status"]:
                 total_oil_bopd += state["oil_rate_bopd"]
                 total_cum_oil_bbl += state["cum_oil_bbl"]
-                total_steam_m3 += 3600.0
+                total_steam_m3 += float(well.params.steam_volume_cwe)
                 total_kwh_daily += state["motor_power_kw"] * 24.0
                 active_wells_count += 1
                 if state["is_rod_floating"]:

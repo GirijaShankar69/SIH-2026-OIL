@@ -94,8 +94,10 @@ st.sidebar.markdown("""
 # RETRIEVE DIGITAL TWIN REAL-TIME STATE
 # ==========================================
 well_twin = baghewala_field_twin.wells[selected_well_id]
+well_twin.set_cycle(selected_cycle)
 well_twin.autonomous_vfd_enabled = autonomous_vfd
 current_state = well_twin.get_current_state(day=day_in_cycle, spm_override=manual_spm)
+live_kpis = baghewala_field_twin.get_live_metrics(selected_well_id, day=day_in_cycle, spm_override=manual_spm)
 field_summary = baghewala_field_twin.get_field_summary()
 
 
@@ -115,8 +117,8 @@ st.markdown(f"""
             </p>
         </div>
         <div style="text-align: right;">
-            <div class="{'oil-badge-red' if current_state['is_rod_floating'] else 'oil-badge-green'}">
-                {'⚠️ CRITICAL: ROD FLOATING DETECTED' if current_state['is_rod_floating'] else '🟢 ASSET STATUS: OPTIMAL'}
+            <div class="{'oil-badge-red' if live_kpis['is_rod_floating'] else 'oil-badge-green'}">
+                {'⚠️ CRITICAL: ROD FLOATING DETECTED' if live_kpis['is_rod_floating'] else '🟢 ASSET STATUS: OPTIMAL'}
             </div>
             <div style="color: #CBD5E1; font-size: 0.85rem; margin-top: 6px;">
                 Cycle #{selected_cycle} • Day {day_in_cycle} of 120
@@ -132,41 +134,43 @@ kpi_col1, kpi_col2, kpi_col3, kpi_col4, kpi_col5 = st.columns(5)
 with kpi_col1:
     st.markdown(render_metric_card(
         "Oil Production", 
-        f"{current_state['oil_rate_bopd']:.1f} BOPD", 
-        f"Cum: {current_state['cum_oil_bbl']:,.0f} bbl", 
+        f"{live_kpis['oil_rate_bopd']:.1f} BOPD", 
+        f"Cum: {live_kpis['cum_oil_bbl']:,.0f} bbl", 
         is_positive=True
     ), unsafe_allow_html=True)
 
 with kpi_col2:
     st.markdown(render_metric_card(
         "Reservoir Temp / Visc", 
-        f"{current_state['reservoir_temperature_c']:.1f} °C", 
-        f"{current_state['oil_viscosity_cp']:.0f} cP In-Situ", 
-        is_positive=current_state['reservoir_temperature_c'] > 85.0
+        f"{live_kpis['temperature']:.1f} °C", 
+        f"{live_kpis['viscosity_cp']:.0f} cP In-Situ", 
+        is_positive=live_kpis['temperature'] > 85.0
     ), unsafe_allow_html=True)
 
 with kpi_col3:
+    target_sor = max(2.8, 3.8 - 0.2 * (selected_cycle - 1))
     st.markdown(render_metric_card(
         "Cumulative SOR", 
-        f"{current_state['sor']:.2f} m³/m³", 
-        "Target: < 3.2", 
-        is_positive=current_state['sor'] < 3.5
+        f"{live_kpis['sor']:.2f} m³/m³", 
+        f"Target: < {target_sor:.2f}", 
+        is_positive=live_kpis['sor'] < (target_sor + 0.3)
     ), unsafe_allow_html=True)
 
 with kpi_col4:
     st.markdown(render_metric_card(
         "Pumping Speed (SPM)", 
-        f"{current_state['operating_spm']:.1f} SPM", 
+        f"{live_kpis['spm']:.1f} SPM", 
         f"VFD: {current_state['vfd_frequency_hz']:.1f} Hz", 
         is_positive=True
     ), unsafe_allow_html=True)
 
 with kpi_col5:
-    float_risk = current_state['rod_floating_risk_index']
+    float_risk = live_kpis['rod_float_risk']
+    shock_text = f"+{current_state['impact_shock_lbs']:,.0f} lbs" if live_kpis['is_rod_floating'] else "0 lbs (Safe)"
     st.markdown(render_metric_card(
         "Rod Floating Risk", 
         f"{float_risk * 100:.1f}%", 
-        "Shock: " + (f"+{current_state['impact_shock_lbs']:,.0f} lbs" if current_state['is_rod_floating'] else "0 lbs"), 
+        f"Shock: {shock_text}", 
         is_positive=float_risk < 0.70
     ), unsafe_allow_html=True)
 
@@ -433,7 +437,7 @@ with tab_optimizer:
     fig_spm = go.Figure()
     fig_spm.add_trace(go.Scatter(
         x=comp_res["days"], y=comp_res["baseline"]["spm_schedule"],
-        mode='lines', name='Historical Fixed SPM (6.0 SPM)',
+        mode='lines', name=f'Historical Fixed SPM ({baseline_spm_input:.1f} SPM)',
         line=dict(color='#EF4444', width=2.5, dash='dash')
     ))
     fig_spm.add_trace(go.Scatter(
@@ -469,15 +473,16 @@ with tab_simulator:
         sim_day = st.slider("Simulate Cycle Day:", 1, 120, day_in_cycle, key="sim_day_slider")
         sim_auto_vfd = st.checkbox("Enable Closed-Loop Autonomous VFD Governor", value=True, key="sim_auto_vfd")
 
+    baseline_spm_sim = manual_spm if manual_spm is not None else 6.0
     # Fetch instant state for slider day
-    state_manual = well_twin.get_current_state(day=sim_day, spm_override=6.0)
+    state_manual = well_twin.get_current_state(day=sim_day, spm_override=baseline_spm_sim)
     state_auto = well_twin.get_current_state(day=sim_day, spm_override=None)
 
     col_sim_left, col_sim_right = st.columns(2)
     with col_sim_left:
         st.markdown(f"""
         <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #EF4444; border-radius: 12px; padding: 16px;">
-            <h4 style="color: #EF4444; margin-top: 0;">🔴 Baseline System (Fixed 6.0 SPM)</h4>
+            <h4 style="color: #EF4444; margin-top: 0;">🔴 Baseline System (Fixed {baseline_spm_sim:.1f} SPM)</h4>
             <p><b>Day {sim_day}:</b> Temp = {state_manual['reservoir_temperature_c']:.1f} °C | Visc = {state_manual['oil_viscosity_cp']:.0f} cP</p>
             <p><b>Rod Floating Status:</b> {'⚠️ SEVERE ROD FLOATING' if state_manual['is_rod_floating'] else '🟢 NORMAL'}</p>
             <p><b>Impact Shock:</b> +{state_manual['impact_shock_lbs']:,.0f} lbs</p>
@@ -509,13 +514,26 @@ with tab_simulator:
 with tab_maintenance:
     st.subheader(f"🛡️ Equipment Reliability & Predictive Maintenance ({selected_well_id})")
 
-    # Calculate RUL
+    # Calculate RUL based on simulated history up to current cycle day
+    history_days = max(1, min(day_in_cycle, len(well_twin.sim_data["days"])))
+    spm_hist = np.zeros(history_days)
+    s_max_hist = np.zeros(history_days)
+    s_min_hist = np.zeros(history_days)
+    impact_hist = np.zeros(history_days)
+    for d_idx in range(history_days):
+        day_st = well_twin.get_current_state(day=d_idx + 1, spm_override=manual_spm if not autonomous_vfd else None)
+        spm_hist[d_idx] = day_st["operating_spm"]
+        s_max_hist[d_idx] = day_st["srp_dynamics"]["sigma_max_psi"]
+        s_min_hist[d_idx] = day_st["srp_dynamics"]["sigma_min_psi"]
+        impact_hist[d_idx] = day_st["impact_shock_lbs"]
+
+    total_service_days = int(selected_well_meta.get("days_in_current_cycle", 40) + (selected_cycle - 1) * 120)
     rul_data = baghewala_maintenance.estimate_rod_fatigue_and_rul(
-        daily_spm_history=np.full(60, current_state["operating_spm"]),
-        daily_sigma_max_psi=np.full(60, current_state["srp_dynamics"]["sigma_max_psi"]),
-        daily_sigma_min_psi=np.full(60, current_state["srp_dynamics"]["sigma_min_psi"]),
-        daily_impact_lbs=np.full(60, current_state["impact_shock_lbs"]),
-        cumulative_days_in_service=180
+        daily_spm_history=spm_hist,
+        daily_sigma_max_psi=s_max_hist,
+        daily_sigma_min_psi=s_min_hist,
+        daily_impact_lbs=impact_hist,
+        cumulative_days_in_service=total_service_days
     )
 
     c_m1, c_m2, c_m3, c_m4 = st.columns(4)
@@ -622,7 +640,7 @@ with tab_reports:
         st.markdown("#### 📊 Export Telemetry & Dynamometer CSV")
         st.write("Download complete 120-day time-series telemetry data and 1D wave dynamometer coordinates.")
 
-        df_export = generate_well_telemetry(selected_well_id, days_count=90)
+        df_export = generate_well_telemetry(selected_well_id, days_count=120)
         csv_buffer = df_export.to_csv(index=False)
         st.download_button(
             label="📥 Download Complete Cycle Telemetry (CSV)",
