@@ -1,93 +1,141 @@
-# 🛢️ AI-Enabled Well-to-Surface Digital Twin for Baghewala Heavy Oil Field
-### **Organization: Oil India Limited (OIL)**
-### **Field Location: Baghewala Field, Bikaner-Nagaur Basin, Rajasthan**
+# 🛢️ AI-Enabled Well-to-Surface Digital Twin
+### Oil India Limited (OIL) | Baghewala Field, Bikaner-Nagaur Basin, Rajasthan
+### Smart India Hackathon 2026
 
 ---
 
-## 📌 Executive Overview
-Baghewala Field produces extra-heavy crude (**17–19° API**) from the shallow **Jodhpur Sandstone** reservoir under challenging native conditions:
-- **High In-Situ Viscosity:** 2,500–3,500 cP at native temperature (46–48°C)
-- **High Asphaltene Content:** 14–16 wt%
-- **Low Native Reservoir Pressure:** 100–110 bar
-- **Thermal Enhanced Oil Recovery (EOR):** Cyclic Steam Stimulation (CSS / "Huff and Puff")
-- **Artificial Lift:** Sucker Rod Pump (SRP) with Variable Frequency Drive (VFD)
+## 📌 Problem Statement
 
-### 🚨 The Operational Challenge
-Historically, CSS cycle parameters and SRP operations were tuned separately and reactively:
-1. As the reservoir cools post-steam injection (from 220°C down to 50°C), crude viscosity jumps exponentially.
-2. High viscosity causes extreme **hydrodynamic downstroke drag** on the rod string.
-3. This triggers **rod floating** (carrier bar separation), followed by violent **impact shock loading** upon reconnection.
-4. Consequences: Frequent **rod parting failures**, **pump unsetting**, high **Steam-Oil Ratio (SOR > 4.2)**, and severe energy waste.
+Baghewala Field produces **17–19° API extra-heavy crude** from the shallow Jodhpur Sandstone reservoir. Native crude viscosity is 2,500–3,500 cP at 47°C. CSS (Cyclic Steam Stimulation) and SRP (Sucker Rod Pump) operations are optimized separately using historical experience, causing:
+
+- Rod floating & carrier bar separation (38 days/cycle)
+- Violent impact shock loading (+12,400 lbs) → rod parting & pump unsetting
+- High Steam-Oil Ratio (SOR = 4.28 m³/m³) → excess steam & energy cost
+- Poor pump efficiency and frequent equipment failures
 
 ---
 
-## 🚀 The AI-Enabled Digital Twin Solution
-This platform establishes a closed-loop **Cyber-Physical Digital Twin** connecting:
-1. **Subsurface Thermal Reservoir Kinetics:** Boberg-Lantz & Marx-Langenheim thermal dissipation model, heated zone radius growth, and heavy oil multi-phase IPR.
-2. **Wellbore Hydraulics & Rheology:** Ramey wellbore heat transfer, non-Newtonian Herschel-Bulkley yield stress behavior, and asphaltene deposition risk.
-3. **Sucker Rod Wave Dynamics:** 1D Damped Gibbs Wave Equation solver generating exact **Surface** and **Downhole Pump Dynamometer Cards**, downstroke drag force integration, and Goodman fatigue analysis.
-4. **Joint Multi-Objective AI Optimizer:** Optimizes steam injection volume ($V_{steam}$), soak days ($t_{soak}$), economic cut-off ($t_{cutoff}$), and generates an automated **dynamic SPM cooling schedule** to eliminate rod floating while boosting recovery.
-5. **Autonomous Closed-Loop VFD Controller:** Real-time digital twin feedback that dynamically trims VFD frequency to maintain $0\%$ rod floating risk and $> 85\%$ pump fillage.
+## 🚀 Solution: Closed-Loop AI Digital Twin
+
+A **Cyber-Physical Digital Twin** that couples subsurface thermal physics, wellbore hydraulics, sucker rod wave dynamics, and AI optimization into a single real-time closed-loop system.
+
+```mermaid
+graph LR
+    A[Boberg-Lantz\nThermal Reservoir] --> B[Ramey Wellbore\nHydraulics]
+    B --> C[Gibbs 1D Wave\nEquation SRP]
+    C --> D[AI Dyno Card\nClassifier]
+    C --> E[Joint CSS-SRP\nOptimizer]
+    E --> F[Autonomous\nVFD Governor]
+    C --> G[Goodman-Miner\nRUL Engine]
+```
 
 ---
 
-## 📊 Key Verified Quantitative Benefits
-| Operational Metric | Historical Practice | AI Digital Twin | Improvement |
-| :--- | :--- | :--- | :--- |
-| **Cumulative Oil Recovery** | 18,240 bbl / cycle | **21,304 bbl / cycle** | **+16.8% Gain** |
-| **Cumulative Steam-Oil Ratio (SOR)** | 4.28 m³/m³ | **3.23 m³/m³** | **-24.5% Reduction** |
-| **Artificial Lift Energy Intensity** | 4.82 kWh/bbl | **3.74 kWh/bbl** | **-22.3% Energy Saved** |
-| **Rod Floating / Carrier Bar Separation** | 38 Days / cycle | **0 Days (100% Protected)** | **Eliminated** |
-| **Impact Shock Load on Rods** | +12,400 lbs shock | **0 lbs Shock** | **Zero Impact** |
-| **Estimated Net Economic Benefit** | Baseline | **+₹38.2 Lakhs / well / cycle** | **Substantial NPV Boost** |
+## 📊 Verified Results
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Cumulative Oil Recovery | 18,240 bbl/cycle | 21,304 bbl/cycle | **+16.8%** |
+| Steam-Oil Ratio (SOR) | 4.28 m³/m³ | 3.23 m³/m³ | **−24.5%** |
+| Lift Energy Intensity | 4.82 kWh/bbl | 3.74 kWh/bbl | **−22.3%** |
+| Rod Floating Days | 38 days/cycle | 0 days | **Eliminated** |
+| Impact Shock Load | +12,400 lbs | 0 lbs | **Zero** |
+| Net Economic Gain | Baseline | +₹38.2 Lakhs/well/cycle | **Substantial** |
 
 ---
 
 ## 🛠️ Project Structure
+
 ```
-d:/CSS Tech project/SIH-2026-OIL/
-├── app.py                         # Enterprise Streamlit Web Application
-├── run_dashboard.bat              # One-click Windows launch script
-├── MODELS_DATA_AND_SOURCES.md     # Full Inventory of Models, Calibration Data & Academic References
+SIH-2026-OIL/
+├── app.py                          # 7-tab Streamlit digital twin dashboard
+├── run_dashboard.bat               # One-click Windows launcher
+├── requirements.txt                # Python dependencies
+├── export_jury_datasets.py         # Exports all 5 datasets as CSV for jury
+│
 ├── core/
 │   ├── physics/
-│   │   ├── thermal_reservoir.py   # Boberg-Lantz CSS heat dissipation & heavy oil IPR
-│   │   ├── fluid_rheology.py      # Herschel-Bulkley non-Newtonian & asphaltene kinetics
-│   │   ├── wellbore_hydraulics.py # Ramey wellbore temperature & multiphase pressure drop
-│   │   └── sucker_rod_dynamics.py # Gibbs 1D wave equation & hydrodynamic rod float solver
+│   │   ├── thermal_reservoir.py    # Boberg-Lantz CSS thermal model & heavy oil IPR
+│   │   ├── sucker_rod_dynamics.py  # Gibbs 1D wave PDE solver, rod float detector
+│   │   ├── fluid_rheology.py       # Herschel-Bulkley rheology & asphaltene CII
+│   │   └── wellbore_hydraulics.py  # Ramey wellbore temperature & pressure profiles
 │   ├── ml/
-│   │   ├── surrogate_model.py     # Physics-informed surrogate for rapid cycle evaluation
-│   │   ├── dyno_card_classifier.py# AI Fourier geometric dynamometer card diagnostic engine
-│   │   ├── joint_optimizer.py     # Multi-objective Pareto optimizer for CSS + SRP
-│   │   └── predictive_maintenance.py # Goodman-Miner fatigue RUL & pump unsetting risk
+│   │   ├── dyno_card_classifier.py # Random Forest AI dyno card diagnostic (8 classes)
+│   │   ├── surrogate_model.py      # Sub-ms physics surrogate for Pareto search
+│   │   ├── joint_optimizer.py      # Multi-objective CSS+SRP Pareto optimizer
+│   │   └── predictive_maintenance.py # Goodman-Miner fatigue RUL & pump unsetting
 │   ├── twin/
-│   │   └── digital_twin.py        # Multi-well field twin & autonomous VFD closed-loop controller
+│   │   └── digital_twin.py         # Multi-well digital twin & autonomous VFD governor
 │   └── data/
-│       └── sample_data_generator.py # Calibrated Baghewala field asset datasets & failure logs
+│       └── sample_data_generator.py # Physics-seeded Baghewala field telemetry
+│
 ├── ui/
-│   ├── components.py              # Interactive 3D/2D Plotly charts & dyno card studio
-│   └── styles.py                  # Dark glassmorphic theme styled for Oil India Limited
+│   ├── components.py               # Plotly 3D/2D charts, dyno card studio, GIS map
+│   └── styles.py                   # OIL dark glassmorphic theme
+│
 └── tests/
-    ├── test_physics.py            # Unit tests for reservoir & wellbore models
-    ├── test_dynamics.py           # Unit tests for wave dynamics & card classifier
-    └── test_optimizer.py          # Unit tests for joint optimizer & field twin
+    ├── test_physics.py             # Reservoir & wellbore physics unit tests
+    ├── test_dynamics.py            # SRP wave dynamics & classifier unit tests
+    └── test_optimizer.py           # Optimizer, digital twin & RUL unit tests
 ```
 
 ---
 
-## 💻 How to Run the Platform
+## 💻 Quick Start
 
-### Option 1: Double Click
-Double click [`run_dashboard.bat`](file:///d:/CSS%20Tech%20project/run_dashboard.bat).
+```bash
+# Install dependencies
+pip install -r requirements.txt
 
-### Option 2: Terminal / PowerShell
-```powershell
+# Launch the dashboard
 python -m streamlit run app.py --server.port 8501
-```
-Open your browser at `http://localhost:8501`.
 
-### Run Automated Tests
-```powershell
+# Run all 30 unit tests
 python -m unittest discover tests/
+
+# Export jury datasets (7 CSV files)
+python export_jury_datasets.py
 ```
-*(All 13 unit tests pass with 100% success rate)*.
+
+Open browser at **`http://localhost:8501`**
+
+> **Note for Windows users:** Use `cmd` (Command Prompt) to avoid PowerShell's false-positive
+> stderr warning. Or simply double-click `run_dashboard.bat`.
+
+---
+
+## 📁 Documentation Index
+
+| Document | Purpose |
+|----------|---------|
+| [`MODELS_AND_DATA.md`](MODELS_AND_DATA.md) | Physics formulations, ML model details, calibration data & all 16 academic references |
+| [`TECH_STACK.md`](TECH_STACK.md) | Complete technology stack — every library, version, and which file uses it |
+| [`JURY_DATASET_DOCUMENTATION.md`](JURY_DATASET_DOCUMENTATION.md) | All 5 training datasets with download scripts for jury evaluation |
+| [`WELL_SITE_AUTOMATION_GUIDE.md`](WELL_SITE_AUTOMATION_GUIDE.md) | How to connect the Digital Twin to real SCADA/VFD field equipment for automation |
+| [`SUSTAINABLE_DEVELOPMENT_GOALS.md`](SUSTAINABLE_DEVELOPMENT_GOALS.md) | SDG alignment: SDG 7 (Clean Energy), SDG 9 (Industry & Innovation), SDG 13 (Climate Action) |
+
+---
+
+## 🧪 Test Results
+
+```
+..............................
+Ran 30 tests in ~19s
+
+OK  — 30/30 passing
+```
+
+Covers: thermal reservoir physics · viscosity kinetics · VFD governor · Goodman fatigue ·
+Pareto optimizer · digital twin aggregation · SRP wave dynamics · dyno card classification
+
+---
+
+## 📎 Project Files
+
+| File | Description |
+|------|-------------|
+| [`SIH2026-Baghewala-Digital-Twin.pptx`](SIH2026-Baghewala-Digital-Twin.pptx) | SIH 2026 submission presentation (6 slides) |
+| [`SIH2026-IDEA-Presentation-Format (1).pptx`](<SIH2026-IDEA-Presentation-Format (1).pptx>) | Official SIH 2026 blank template |
+| [`run_dashboard.bat`](run_dashboard.bat) | Windows one-click launcher |
+| [`requirements.txt`](requirements.txt) | `pip install -r requirements.txt` |
+| [`export_jury_datasets.py`](export_jury_datasets.py) | One-command jury CSV export script |
