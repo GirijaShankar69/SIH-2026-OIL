@@ -640,24 +640,10 @@ with tab_reports:
         st.markdown("#### 📊 Export Telemetry & Dynamometer CSV")
         st.write("Download complete 120-day time-series telemetry data and 1D wave dynamometer coordinates.")
 
-<<<<<<< Updated upstream
-        df_export = generate_well_telemetry(selected_well_id, days_count=120)
-=======
-<<<<<<< Updated upstream
-        df_export = generate_well_telemetry(selected_well_id, days_count=90)
->>>>>>> Stashed changes
-        csv_buffer = df_export.to_csv(index=False)
-        st.download_button(
-            label="📥 Download Complete Cycle Telemetry (CSV)",
-            data=csv_buffer,
-            file_name=f"{selected_well_id}_telemetry_history.csv",
-            mime="text/csv"
-        )
-=======
+
         # --- FIX: Lazy generation — data only built when user clicks Generate,
         # not on every page render. This prevents IDM/browser download managers
         # from intercepting a spurious download trigger on load. ---
->>>>>>> Stashed changes
 
         telem_key = f"telemetry_csv_{selected_well_id}"
         dyno_key  = f"dyno_csv_{selected_well_id}_{day_in_cycle}"

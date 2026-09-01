@@ -1,0 +1,7 @@
+temperature_c,viscosity_cp,measurement_method
+47,2650,Rolling ball viscometer
+70,620,Rotational viscometer
+100,145,Rotational viscometer
+140,42,Capillary viscometer
+180,24,Capillary viscometer
+220,18,High-temp viscometer
