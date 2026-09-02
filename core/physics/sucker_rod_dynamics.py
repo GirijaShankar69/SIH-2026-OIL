@@ -295,24 +295,54 @@ class SuckerRodDynamicsEngine:
         # Specific Diagnostic Fault Modifiers (for training/testing or manual simulation)
         if fault_type == "fluid_pound":
             fillage_val = 0.65
-            # Recompute sharp pound impact
+            # Recompute sharp pound impact at bottom-of-stroke
             for i, th in enumerate(theta):
                 if np.pi <= th <= 1.6 * np.pi:
                     surface_load_lbs[i] -= 2200.0 * np.sin(th - np.pi)
                     if th > 1.45 * np.pi:
                         surface_load_lbs[i] += 3500.0
+
         elif fault_type == "gas_interference":
+            # Smooth compression rounding on downstroke — fluid gas re-compresses
             for i, th in enumerate(theta):
                 if np.pi <= th:
-                    # Smooth compression curvature
                     surface_load_lbs[i] = w_rod_fluid_lbs - 1200.0 * (1.0 - np.cos(th - np.pi))
+
         elif fault_type == "unanchored_tubing":
-            # Tubing elasticity creates severe hysteresis tilt
+            # Free tubing elasticity creates a pronounced parallelogram tilt
             surface_load_lbs += 1800.0 * (surface_position_in / stroke_in - 0.5)
+
         elif fault_type == "valve_leak":
+            # Traveling Valve (TV) leak: upstroke load ramps down as fluid bleeds back
             for i, th in enumerate(theta):
                 if th < np.pi:
                     surface_load_lbs[i] -= 1800.0 * (1.0 - th / np.pi)
+
+        elif fault_type == "standing_leak":
+            # Standing Valve (SV) leak: downstroke load ramps UP as fluid back-flows
+            # through the SV — mirror image of TV leak pattern (distinct feature signature)
+            for i, th in enumerate(theta):
+                if th >= np.pi:
+                    # Downstroke: load rises instead of falling — characteristic SV leak shape
+                    progress = (th - np.pi) / np.pi   # 0 → 1 over downstroke
+                    surface_load_lbs[i] += 2000.0 * progress * (1.0 - progress)
+            # Also suppress downhole load drop (fluid never fully falls)
+            for i, th in enumerate(theta):
+                if th >= np.pi:
+                    downhole_load_lbs[i] += 1200.0 * np.sin(th - np.pi)
+
+        elif fault_type == "pump_off":
+            # Pump-off / high viscous friction: low fillage + high drag load on both strokes
+            fillage_val = 0.35
+            # Upstroke: normal high load. Downstroke: viscous drag keeps load elevated
+            # (fails to drop cleanly — classic pump-off / over-pumped shape)
+            for i, th in enumerate(theta):
+                if th >= np.pi:
+                    progress = (th - np.pi) / np.pi
+                    # Load stays abnormally high mid-downstroke due to no fluid column
+                    surface_load_lbs[i] += 1500.0 * np.sin(progress * np.pi)
+            # Compress the effective card area (low fluid work)
+            surface_load_lbs *= 0.85
 
         # Performance and Stress Metrics
         pprl_lbs = float(np.max(surface_load_lbs)) # Peak Polish Rod Load

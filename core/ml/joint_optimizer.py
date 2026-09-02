@@ -53,7 +53,7 @@ class JointCSSSRPOptimizer:
         smoothed_spm[-2:] = spm_schedule[-2:]
         return smoothed_spm
 
-    def run_cycle_comparison(self, 
+    def run_cycle_comparison(self,
                              cycle_number: int = 1,
                              steam_volume_baseline: float = 4000.0,
                              soak_days_baseline: float = 7.0,
@@ -62,9 +62,13 @@ class JointCSSSRPOptimizer:
                              soak_days_opt: float = 5.0,
                              producing_days: int = 120) -> Dict[str, Any]:
         """
-        Runs comprehensive comparative analysis between:
-        1. Historical Practice (Static steam, static soak, fixed SPM)
-        2. AI-Optimized Digital Twin (Optimized steam, optimal soak, dynamic AI SPM)
+        Comparative simulation of two CSS+SRP parameter sets:
+          1. Historical Practice — static steam volume, static soak days, fixed SPM
+          2. AI-Recommended Set  — reduced steam volume, shorter optimal soak, dynamic AI SPM schedule
+
+        Note: This is a deterministic two-point comparison, not a full Pareto sweep.
+        The 'optimized' parameters are pre-selected by the surrogate model and VFD governor;
+        the multi-objective trade-off frontier is displayed separately in the Pareto tab.
         """
         # 1. BASELINE SIMULATION (Static Parameters)
         params_base = CSSCycleParameters(

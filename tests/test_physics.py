@@ -18,12 +18,26 @@ class TestThermalPhysics(unittest.TestCase):
 
     def test_oil_viscosity_temperature_dependence(self):
         """Viscosity should drop by orders of magnitude from 47°C to 220°C."""
-        v_native = self.reservoir.oil_viscosity(47.0) # ~ 2500 - 3000 cP
-        v_steam = self.reservoir.oil_viscosity(220.0) # ~ 15 - 25 cP
-        
-        self.assertGreater(v_native, 1500.0)
-        self.assertLess(v_steam, 35.0)
-        self.assertGreater(v_native / v_steam, 50.0)
+        v_native = self.reservoir.oil_viscosity(47.0)   # Calibration: 2,500–3,000 cP
+        v_100    = self.reservoir.oil_viscosity(100.0)  # Calibration: 100–200 cP
+        v_steam  = self.reservoir.oil_viscosity(220.0)  # Calibration: 12–25 cP
+
+        # Calibration-point assertions matching MODELS_AND_DATA.md documented values
+        self.assertGreater(v_native, 2200.0,
+            f"47°C viscosity {v_native:.0f} cP below documented 2,500 cP minimum")
+        self.assertLess(v_native, 3500.0,
+            f"47°C viscosity {v_native:.0f} cP above documented 3,500 cP maximum")
+        self.assertGreater(v_100, 80.0,
+            f"100°C viscosity {v_100:.0f} cP below expected ~100–200 cP range")
+        self.assertLess(v_100, 250.0,
+            f"100°C viscosity {v_100:.0f} cP above expected ~100–200 cP range")
+        self.assertGreater(v_steam, 10.0,
+            f"220°C viscosity {v_steam:.1f} cP below expected 12–25 cP range")
+        self.assertLess(v_steam, 30.0,
+            f"220°C viscosity {v_steam:.1f} cP above expected 12–25 cP range")
+        # Monotonic decrease check
+        self.assertGreater(v_native / v_steam, 50.0,
+            "Viscosity ratio 47°C / 220°C should exceed 50×")
 
     def test_steam_chamber_energy_balance(self):
         """Steam chamber calculation should return positive radius and valid heat content."""

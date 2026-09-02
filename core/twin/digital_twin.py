@@ -135,9 +135,14 @@ class BaghewalaWellDigitalTwin:
             spm = self.current_spm
 
         # Wellbore profile
+        # P_wf = pump intake pressure (bottomhole flowing pressure at pump setting depth).
+        # Using params.bottomhole_flowing_pressure (18 bar) — the physically correct value
+        # set in CSSCycleParameters. Previously used p_res - 12.0 which was an arbitrary
+        # drawdown proxy and not a meaningful wellbore BHP definition.
+        p_wf = float(self.params.bottomhole_flowing_pressure)
         hydraulics = baghewala_wellbore.compute_hydraulics_profile(
             sandface_temp_c=temp_sf,
-            bottomhole_pressure_bar=p_res - 12.0,
+            bottomhole_pressure_bar=p_wf,
             liquid_rate_m3d=q_oil / 6.2898 / (1.0 - wcut + 1e-4),
             water_cut=wcut
         )
@@ -146,7 +151,7 @@ class BaghewalaWellDigitalTwin:
         srp_res = baghewala_srp.solve_wave_equation(
             temperature_c=temp_res,
             viscosity_cp=visc,
-            bottomhole_pressure_bar=p_res - 12.0,
+            bottomhole_pressure_bar=p_wf,
             spm=spm,
             stroke_length_m=self.stroke_length,
             pump_fillage=0.92
