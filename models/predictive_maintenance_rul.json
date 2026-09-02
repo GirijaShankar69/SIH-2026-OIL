@@ -1,0 +1,16 @@
+{
+  "model_type": "Modified Goodman-Miner Cumulative Fatigue & Impact Damage Accumulator",
+  "rod_specification": {
+    "rod_grade": "API Grade D Alloy Steel",
+    "ultimate_tensile_strength_psi": 115000.0,
+    "elastic_modulus_psi": 30000000.0,
+    "service_factor": 0.9,
+    "top_taper_od_in": 0.875,
+    "bottom_taper_od_in": 0.75,
+    "density_kg_m3": 7850.0
+  },
+  "goodman_equation": "S_a = (S_ult / 1.75 + 0.5625 * S_min) * Service_Factor",
+  "impact_shock_amplification": "Equivalent_Stress = Base_Stress * (1 + (F_impact / 3000)^1.5)",
+  "miner_rule": "Damage_Total = Sum(n_i / N_f_i)",
+  "rul_formula": "RUL_days = (1.0 - Damage_Total) / Average_Daily_Damage"
+}

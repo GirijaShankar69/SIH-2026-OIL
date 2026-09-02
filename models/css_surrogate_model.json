@@ -1,0 +1,25 @@
+{
+  "model_type": "Physics-Informed Reduced-Order Thermal-Inflow Surrogate",
+  "governing_equations": [
+    "Marx-Langenheim (1959) Steam Chamber Growth",
+    "Boberg-Lantz (1966) Conductive Thermal Decay",
+    "Darcy-Vogel Multiphase Heavy Crude Inflow Performance",
+    "Andrade-Walther Calibrated Viscosity Kinetics"
+  ],
+  "calibrated_parameters": {
+    "formation_depth_m": 1050.0,
+    "net_pay_m": 18.0,
+    "porosity": 0.24,
+    "permeability_md": 280.0,
+    "native_viscosity_cp": 2650.0,
+    "native_temp_c": 47.0,
+    "native_pressure_bar": 110.0,
+    "crude_api": 18.2,
+    "asphaltene_wt_pct": 14.5
+  },
+  "evaluation_speed_ms": 1.2,
+  "supported_cycle_range": [
+    1,
+    6
+  ]
+}

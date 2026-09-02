@@ -1,0 +1,39 @@
+{
+  "project": "AI-Enabled Well-to-Surface Digital Twin for Baghewala Heavy Oil Field",
+  "client": "Oil India Limited (OIL)",
+  "event": "Smart India Hackathon 2026",
+  "export_timestamp": "2026-09-02T11:17:14.097725",
+  "models": {
+    "dyno_card_classifier": {
+      "file": "dyno_card_rf_classifier.pkl",
+      "framework": "scikit-learn 1.9.0",
+      "algorithm": "RandomForestClassifier(n_estimators=100, max_features='sqrt')",
+      "classes": [
+        "Normal Fillage (Optimal)",
+        "Severe Rod Floating & Impact Loading",
+        "Fluid Pound (Underfilled)",
+        "Gas Interference",
+        "Unanchored Tubing",
+        "Traveling Valve Leak",
+        "Standing Valve Leak",
+        "Pump Off / High Viscous Friction"
+      ],
+      "test_accuracy": 100.0,
+      "val_accuracy": 100.0,
+      "feature_count": 12
+    },
+    "css_surrogate_model": {
+      "file": "css_surrogate_model.pkl / css_surrogate_model.json",
+      "framework": "Physics-Informed Reduced Order Model (ROM)",
+      "inference_time_ms": 1.2
+    },
+    "vfd_governor": {
+      "file": "vfd_governor_model.json",
+      "type": "Autonomous Closed-Loop Speed Trim Governor"
+    },
+    "predictive_maintenance": {
+      "file": "predictive_maintenance_rul.json",
+      "type": "Goodman-Miner Cumulative S-N Fatigue Engine"
+    }
+  }
+}

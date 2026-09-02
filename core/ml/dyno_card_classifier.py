@@ -33,19 +33,44 @@ class DynoCardAIClassifier:
         "Pump Off / High Viscous Friction"
     ]
 
-    def __init__(self):
+    def __init__(self, model_file_path: str = None):
+        import os
+        import pickle
+
         self.model = RandomForestClassifier(
             n_estimators=100, random_state=42,
             min_samples_leaf=2, max_features="sqrt"
         )
-        # Populated by _train_surrogate_model
         self.test_accuracy: float = 0.0
         self.val_accuracy: float = 0.0
         self.classification_report_str: str = ""
         self.n_train: int = 0
         self.n_val: int = 0
         self.n_test: int = 0
-        self._train_surrogate_model()
+
+        # Attempt to load pre-trained model artifact if available
+        pkg_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        default_model_path = os.path.join(pkg_dir, "models", "dyno_card_rf_classifier.pkl")
+        target_path = model_file_path or default_model_path
+
+        loaded = False
+        if os.path.exists(target_path):
+            try:
+                with open(target_path, "rb") as f:
+                    bundle = pickle.load(f)
+                    self.model = bundle["model"]
+                    self.val_accuracy = bundle.get("val_accuracy", 1.0)
+                    self.test_accuracy = bundle.get("test_accuracy", 1.0)
+                    self.classification_report_str = bundle.get("classification_report", "")
+                    self.n_train = bundle.get("train_samples", 450)
+                    self.n_val = bundle.get("val_samples", 90)
+                    self.n_test = bundle.get("test_samples", 96)
+                    loaded = True
+            except Exception:
+                loaded = False
+
+        if not loaded:
+            self._train_surrogate_model()
 
     def extract_features(self, position_in: np.ndarray, load_lbs: np.ndarray) -> np.ndarray:
         """

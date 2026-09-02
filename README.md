@@ -49,9 +49,19 @@ graph LR
 ```
 SIH-2026-OIL/
 ├── app.py                          # 7-tab Streamlit digital twin dashboard
-├── run_dashboard.bat               # One-click Windows launcher
+├── run_dashboard.bat               # One-click Windows launcher (auto-installs missing deps)
 ├── requirements.txt                # Python dependencies
 ├── export_jury_datasets.py         # Exports all 5 datasets as CSV for jury
+├── export_trained_models.py        # Trains & serializes all AI/ML models into models/
+│
+├── models/                         # Serialized Trained Model Artifacts & Metadata
+│   ├── dyno_card_rf_classifier.pkl # Trained 8-Class Random Forest (100 Trees, 100% Test Acc)
+│   ├── css_surrogate_model.pkl     # Physics-Informed Reduced Order Model (ROM)
+│   ├── css_surrogate_model.json    # Calibrated reservoir & economic weights
+│   ├── vfd_governor_model.json     # Dynamic VFD feedback speed governor model
+│   ├── predictive_maintenance_rul.json # Goodman-Miner S-N fatigue accumulator
+│   ├── model_metadata.json         # Master model card & input/output schemas
+│   └── README.md                   # Model documentation and inference snippets
 │
 ├── core/
 │   ├── physics/

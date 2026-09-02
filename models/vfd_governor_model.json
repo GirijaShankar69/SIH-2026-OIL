@@ -1,0 +1,35 @@
+{
+  "controller_type": "Closed-Loop Hydrodynamic Drag & Thermal Viscosity Governor",
+  "target_operating_envelope": {
+    "max_allowable_rod_float_risk": 0.7,
+    "target_pump_fillage": 0.85,
+    "max_spm": 8.0,
+    "min_spm": 3.2
+  },
+  "temperature_viscosity_speed_mapping": [
+    {
+      "regime": "Hot Early Production",
+      "temp_c_min": 130.0,
+      "visc_cp_max": 40.0,
+      "spm_range": "7.2 - 7.8 SPM",
+      "vfd_hz": "48 - 52 Hz"
+    },
+    {
+      "regime": "Moderate Thermal Inflow",
+      "temp_c_min": 85.0,
+      "temp_c_max": 130.0,
+      "visc_cp_range": "40 - 250 cP",
+      "spm_range": "5.5 - 6.8 SPM",
+      "vfd_hz": "37 - 45 Hz"
+    },
+    {
+      "regime": "Cold High-Viscosity Decay",
+      "temp_c_max": 85.0,
+      "visc_cp_min": 250.0,
+      "spm_range": "3.8 - 4.5 SPM",
+      "vfd_hz": "25 - 30 Hz"
+    }
+  ],
+  "drag_damping_coefficient": 0.085,
+  "carrier_bar_safety_margin": 1.15
+}
