@@ -1,0 +1,7 @@
+date,well_id,cycle,day_in_cycle,event,depth_m,root_cause,downtime_days,repair_cost_inr
+2024-03-14,BGW-04,2,65,Sucker Rod Parted,620,Severe Rod Floating & Downstroke Impact Shock,4.5,285000
+2024-06-22,BGW-12,1,82,Pump Unsetting,1010,Carrier Bar Separation & Bottomhole Impact Rebound,3.0,195000
+2024-09-05,BGW-01,2,94,Rod Pin Fatigue Failure,450,Cyclic High Viscous Overload (> 1200 cP),4.0,240000
+2024-11-18,BGW-09,3,72,Asphaltene Deposition & Valve Jamming,995,Temperature Drop below Asphaltene Onset Point (64°C),2.5,160000
+2025-02-10,BGW-04,3,70,Sucker Rod Buckling & Tubing Wear,710,Negative Rod Tension on Downstroke (Rod Float),5.0,340000
+2025-05-29,BGW-15,2,88,Traveling Valve Seal Failure,1005,Abrasive Sand & High Viscosity Fluid Pound,3.5,210000
